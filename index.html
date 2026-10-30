@@ -31,7 +31,6 @@
     body { font-family: 'Vazirmatn', sans-serif; }
     .mono { font-family: 'JetBrains Mono', monospace; direction: ltr; text-align: left; }
     #editor { height: 100%; width: 100%; font-size: 14px; font-family: 'JetBrains Mono', monospace; direction: ltr; }
-    /* Custom scrollbars */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #0f172a; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
@@ -64,10 +63,10 @@
         <optgroup label="📋 تمرین‌ها و کوئیزهای کلاسی">
           <option value="quiz12">کوییز ۱۲: رسم تغییرات ضربان قلب (Heart Rate)</option>
           <option value="ex3">تمرین ۳: محاسبه ولتاژ، جریان و توان سیگنال</option>
-          <option value="sine">رسم شکل‌موج سینوسی و نویز فرکانسی</option>
+          <option value="sine">رسم شکل‌موج سینوسی ۵۰ هرتز با نویز</option>
         </optgroup>
 
-        <optgroup label="📝 بخش اول: نام‌گذاری و خطایابی متغیرها">
+        <optgroup label="📝 بخش اول: نام‌گذاری و متغیرهای خاص">
           <option value="q1_error">سوال ۱: خطای نام‌گذاری متغیرها (2speed, total-sum)</option>
           <option value="q2_inf_nan">سوال ۲: خروجی تقسیم بر صفر (Inf و NaN)</option>
           <option value="q5_eps">سوال ۵: مقدار دقت سیستم (eps)</option>
@@ -190,7 +189,7 @@
       useSoftTabs: true
     });
 
-    // --- 2. Booklet Questions and Examples Database ---
+    // --- 2. Examples & Course Quizzes Database ---
     const EXAMPLES = {
       quiz12: `% کوییز ۱۲ مهندسی پزشکی: تغییرات ضربان قلب بیمار در ۱۰ دقیقه
 time = 0:1:9;
@@ -203,13 +202,12 @@ ylabel('Heart Rate (bpm)');
 legend('Heart Rate');
 grid on;
 
-fprintf('حداکثر ضربان قلب ثبت شده: %d bpm\\n', max(heartRate));
-fprintf('میانگین ضربان قلب در طول تست: %.1f bpm\\n', mean(heartRate));`,
+fprintf('حداکثر ضربان: %d bpm\\nمیانگین: %.1f bpm\\n', max(heartRate), mean(heartRate));`,
 
       ex3: `% تمرین ۳ مهندسی پزشکی: تحلیل ولتاژ، جریان و توان
-sample = 1:10;
-voltage = [215, 220, 228, 219, 222, 230, 218, 224, 226, 221];
-current = [2.5, 3.1, 4.2, 3.8, 5.0, 6.2, 4.5, 5.3, 5.8, 4.9];
+sample = 1:5;
+voltage = [215 220 228 219 222];
+current = [2.5 3.1 4.2 3.8 5.0];
 
 % محاسبه توان با عملگر نقطه‌ای ضرب درایه‌ای
 power = voltage .* current;
@@ -219,27 +217,27 @@ min_V = min(voltage)
 mean_V = mean(voltage)
 mean_P = mean(power)
 
-plot(sample, power, '-b*', 'LineWidth', 1.8);
-title('نمودار توان الکتریکی سیگنال (Power)');
+plot(sample, power, '-b*', 'LineWidth', 2);
+title('نمودار توان الکتریکی سیگنال');
 xlabel('شماره نمونه');
 ylabel('توان (Watt)');
 grid on;`,
 
-      sine: `% شبیه‌سازی سیگنال سینوسی با نویز زیستی
+      sine: `% شبیه‌سازی سیگنال سینوسی با نویز
 Fs = 1000;
-t = 0:1/Fs:0.2;
+t = 0:1/Fs:0.04;
 f = 50;
 signal = sin(2*pi*f*t);
-noisy_signal = signal + 0.3 * rand(size(t));
+noisy_signal = signal + 0.2 * rand(size(t));
 
 plot(t, noisy_signal, 'LineWidth', 1.5);
-title('سیگنال سینوسی ۵۰ هرتز به همراه نویز');
+title('سیگنال سینوسی ۵۰ هرتز با نویز');
 xlabel('زمان (ثانیه)');
 ylabel('دامنه ولتاژ');
 grid on;`,
 
       q1_error: `% سوال ۱ میان‌ترم: قوانین نام‌گذاری متغیرها
-% تست ۱: نام‌گذاری غیرمجاز با شروع عدد (ایجاد خطا)
+% تست ۱: نام‌گذاری غیرمجاز با شروع عدد (متلب ارور می‌دهد)
 2speed = 100;
 
 % تست ۲: کاراکتر غیرمجاز منها
@@ -278,10 +276,7 @@ A = [10 20 30 40;
 elem_2_3 = A(2, 3)
 
 % سوال ۲۰: کل سطر دوم
-row_2 = A(2, :)
-
-% سوال ۲۱: ستون اول و سوم
-sub_cols = A(:, [1 3])`,
+row_2 = A(2, :)`,
 
       q26_cat_err: `% سوال ۲۶ میان‌ترم: خطای ابعاد در الحاق بردارها
 x = [1 2 3];
@@ -317,19 +312,174 @@ mult_res = x .* y
 div_res = x ./ y`
     };
 
-    // Load default
     editor.setValue(EXAMPLES.quiz12, -1);
 
-    // Change example
     document.getElementById("exampleSelector").addEventListener("change", (e) => {
       const key = e.target.value;
-      if (key && EXAMPLES[key]) {
-        editor.setValue(EXAMPLES[key], -1);
-      }
+      if (key && EXAMPLES[key]) editor.setValue(EXAMPLES[key], -1);
     });
 
-    // --- 3. Client-Side MATLAB Simulation Engine ---
-    class MatlabSimulator {
+    // --- 3. Enhanced Elementwise Functions in Math.js ---
+    function makeElementWise(fn) {
+      return function elemWise(x) {
+        if (Array.isArray(x)) return x.map(elemWise);
+        if (window.math && window.math.isMatrix(x)) return window.math.matrix(x.toArray().map(elemWise));
+        return fn(x);
+      };
+    }
+
+    const elemFns = {};
+    ["sin", "cos", "tan", "exp", "log", "log10", "sqrt", "abs"].forEach(name => {
+      const orig = Math[name] || window.math[name];
+      elemFns[name] = makeElementWise(orig);
+    });
+
+    window.math.import({
+      ...elemFns,
+      rand: function(...args) {
+        let rows = 1, cols = 1;
+        if (args.length === 1) {
+          if (Array.isArray(args[0])) {
+            rows = args[0][0] || 1;
+            cols = args[0][1] || args[0].length || 1;
+          } else if (window.math.isMatrix(args[0])) {
+            const arr = args[0].toArray();
+            rows = arr[0] || 1;
+            cols = arr[1] || arr.length || 1;
+          } else {
+            rows = args[0];
+            cols = args[0];
+          }
+        } else if (args.length >= 2) {
+          rows = args[0];
+          cols = args[1];
+        }
+        const result = [];
+        for (let r = 0; r < rows; r++) {
+          const row = [];
+          for (let c = 0; c < cols; c++) row.push(parseFloat(Math.random().toFixed(4)));
+          result.push(row);
+        }
+        return rows === 1 ? result[0] : result;
+      },
+      ceil: makeElementWise(Math.ceil),
+      floor: makeElementWise(Math.floor),
+      fix: makeElementWise(x => x > 0 ? Math.floor(x) : Math.ceil(x)),
+      round: makeElementWise(Math.round),
+      length: x => Array.isArray(x) ? Math.max(x.length, (x[0] && x[0].length) || 1) : (window.math.isMatrix(x) ? Math.max(...x.size()) : 1),
+      size: x => {
+        if (window.math.isMatrix(x)) return x.size();
+        if (Array.isArray(x)) return Array.isArray(x[0]) ? [x.length, x[0].length] : [1, x.length];
+        return [1, 1];
+      }
+    }, { override: true });
+
+    // --- 4. Statement & Token Parsers ---
+    function splitStatements(rawCode) {
+      const statements = [];
+      let current = "";
+      let depthBracket = 0;
+      let depthParen = 0;
+      let inString = false;
+      let stringChar = "";
+
+      const lines = rawCode.split("\n");
+      for (let i = 0; i < lines.length; i++) {
+        let line = lines[i];
+        let cleanLine = "";
+        for (let j = 0; j < line.length; j++) {
+          const c = line[j];
+          if (inString) {
+            cleanLine += c;
+            if (c === stringChar && line[j - 1] !== "\\") inString = false;
+          } else {
+            if (c === "'" || c === '"') {
+              inString = true;
+              stringChar = c;
+              cleanLine += c;
+            } else if (c === "%") {
+              break;
+            } else {
+              cleanLine += c;
+              if (c === "[") depthBracket++;
+              if (c === "]") depthBracket--;
+              if (c === "(") depthParen++;
+              if (c === ")") depthParen--;
+            }
+          }
+        }
+
+        if (!cleanLine.trim() && depthBracket === 0 && depthParen === 0) continue;
+        current += (current ? " " : "") + cleanLine.trim();
+
+        if (depthBracket === 0 && depthParen === 0) {
+          if (current.trim()) {
+            statements.push(current.trim());
+            current = "";
+          }
+        }
+      }
+      if (current.trim()) statements.push(current.trim());
+
+      const finalStmts = [];
+      for (const s of statements) {
+        let sub = "";
+        let dBr = 0, dP = 0, inS = false, sCh = "";
+        for (let k = 0; k < s.length; k++) {
+          const ch = s[k];
+          if (inS) {
+            sub += ch;
+            if (ch === sCh && s[k - 1] !== "\\") inS = false;
+          } else {
+            if (ch === "'" || ch === '"') {
+              inS = true; sCh = ch; sub += ch;
+            } else if (ch === "[") { dBr++; sub += ch; }
+            else if (ch === "]") { dBr--; sub += ch; }
+            else if (ch === "(") { dP++; sub += ch; }
+            else if (ch === ")") { dP--; sub += ch; }
+            else if (ch === ";" && dBr === 0 && dP === 0) {
+              if (sub.trim()) finalStmts.push(sub.trim() + ";");
+              sub = "";
+            } else {
+              sub += ch;
+            }
+          }
+        }
+        if (sub.trim()) finalStmts.push(sub.trim());
+      }
+      return finalStmts;
+    }
+
+    function splitTopLevel(str, delimiter = ",") {
+      const result = [];
+      let current = "";
+      let depthParen = 0, depthBracket = 0, inString = false, stringChar = "";
+
+      for (let i = 0; i < str.length; i++) {
+        const c = str[i];
+        if (inString) {
+          current += c;
+          if (c === stringChar && str[i - 1] !== "\\") inString = false;
+        } else {
+          if (c === "'" || c === '"') {
+            inString = true; stringChar = c; current += c;
+          } else if (c === "(") { depthParen++; current += c; }
+          else if (c === ")") { depthParen--; current += c; }
+          else if (c === "[") { depthBracket++; current += c; }
+          else if (c === "]") { depthBracket--; current += c; }
+          else if (c === delimiter && depthParen === 0 && depthBracket === 0) {
+            result.push(current.trim()); current = "";
+          } else {
+            current += c;
+          }
+        }
+      }
+      if (current.trim()) result.push(current.trim());
+      return result;
+    }
+
+    // --- 5. Robust MATLAB Simulator Engine ---
+    class RobustMatlabSimulator {
       constructor() {
         this.workspace = {
           pi: Math.PI,
@@ -343,17 +493,11 @@ div_res = x ./ y`
         this.currentFormat = "short";
       }
 
-      resetConsole() {
-        this.outputLines = [];
-        this.plotData = null;
-      }
+      print(t) { this.outputLines.push(t); }
 
-      print(text) {
-        this.outputLines.push(text);
-      }
-
-      formatValue(val) {
+      formatVal(val) {
         if (val === null || val === undefined) return "";
+        if (window.math && window.math.isMatrix(val)) val = val.toArray();
         if (typeof val === "number") {
           if (Number.isNaN(val)) return "NaN";
           if (!Number.isFinite(val)) return val > 0 ? "Inf" : "-Inf";
@@ -363,390 +507,276 @@ div_res = x ./ y`
           return parseFloat(val.toFixed(4)).toString();
         }
         if (Array.isArray(val)) {
-          // Check if 2D
           if (Array.isArray(val[0])) {
-            return val.map(row => "   " + row.map(c => this.formatValue(c)).join("   ")).join("\n");
+            return val.map(r => "   " + r.map(c => this.formatVal(c)).join("   ")).join("\n");
           }
-          return "   " + val.map(c => this.formatValue(c)).join("   ");
+          return "   " + val.map(c => this.formatVal(c)).join("   ");
         }
         return val.toString();
       }
 
-      // Check variable naming validity (Question 1 rules)
-      validateVarName(name) {
-        if (!name) return false;
-        // starts with digit
-        if (/^[0-9]/.test(name)) {
-          throw new Error(`خطای نام‌گذاری متلب: نام متغیر '${name}' نمی‌تواند با عدد شروع شود.`);
-        }
-        // contains operators or illegal characters
-        if (name.includes("-") || name.includes("$") || name.includes("@") || name.includes("#")) {
-          throw new Error(`خطای متلب: کاراکترهای غیرمجاز در نام متغیر '${name}'.`);
-        }
-        // reserved keyword
-        const keywords = ["for", "while", "if", "else", "elseif", "end", "function", "return", "switch", "case"];
-        if (keywords.includes(name)) {
-          throw new Error(`خطای متلب: کلمه کلیدی رزرو شده '${name}' نمی‌تواند به عنوان نام متغیر استفاده شود.`);
-        }
-        return true;
-      }
-
-      // Main script runner
       execute(rawCode) {
-        this.resetConsole();
-        const lines = rawCode.split("\n");
+        this.outputLines = [];
+        this.plotData = null;
+        const statements = splitStatements(rawCode);
 
-        for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-          let line = lines[lineIndex].trim();
-          if (!line || line.startsWith("%")) continue;
+        for (let i = 0; i < statements.length; i++) {
+          let stmt = statements[i].trim();
+          if (!stmt) continue;
 
-          // Strip inline comments
-          const commentIdx = line.indexOf("%");
-          if (commentIdx !== -1) {
-            line = line.substring(0, commentIdx).trim();
-          }
-          if (!line) continue;
-
-          const suppressOutput = line.endsWith(";");
-          if (suppressOutput) {
-            line = line.slice(0, -1).trim();
-          }
+          const suppress = stmt.endsWith(";");
+          if (suppress) stmt = stmt.slice(0, -1).trim();
+          if (!stmt) continue;
 
           try {
-            this.executeStatement(line, suppressOutput);
+            this.runStmt(stmt, suppress);
           } catch (err) {
-            this.print(`❌ خطا در خط ${lineIndex + 1}:\n   ${err.message}`);
-            return {
-              stdout: this.outputLines.join("\n"),
-              hasPlot: this.plotData !== null,
-              plot: this.plotData,
-              status: "error"
-            };
+            this.print(`❌ خطا:\n   ${err.message}`);
+            return { stdout: this.outputLines.join("\n"), status: "error", plot: this.plotData };
           }
         }
-
-        return {
-          stdout: this.outputLines.join("\n"),
-          hasPlot: this.plotData !== null,
-          plot: this.plotData,
-          status: "success"
-        };
+        return { stdout: this.outputLines.join("\n"), status: "success", plot: this.plotData };
       }
 
-      executeStatement(stmt, suppress) {
-        // Special commands: clc, clear
-        if (stmt === "clc") {
-          this.outputLines = [];
-          return;
-        }
+      runStmt(stmt, suppress) {
+        if (stmt === "clc") { this.outputLines = []; return; }
         if (stmt.startsWith("clear")) {
           const parts = stmt.split(/\s+/);
-          if (parts.length === 1) {
-            this.workspace = { pi: Math.PI, eps: 2.2204e-16, Inf: Infinity, NaN: NaN, ans: null };
-          } else {
-            delete this.workspace[parts[1]];
-          }
+          if (parts.length === 1) this.workspace = { pi: Math.PI, eps: 2.2204e-16, Inf: Infinity, NaN: NaN, ans: null };
+          else delete this.workspace[parts[1]];
           return;
         }
-
-        // Special commands: format
         if (stmt.startsWith("format ")) {
-          const fmt = stmt.split(/\s+/)[1];
-          if (["short", "long", "bank"].includes(fmt)) this.currentFormat = fmt;
+          const f = stmt.split(/\s+/)[1];
+          if (["short", "long", "bank"].includes(f)) this.currentFormat = f;
           return;
         }
 
         // disp(...)
-        const dispMatch = stmt.match(/^disp\((.*)\)$/);
-        if (dispMatch) {
-          const val = this.evalExpression(dispMatch[1]);
-          this.print(this.formatValue(val));
+        const dispM = stmt.match(/^disp\((.*)\)$/);
+        if (dispM) {
+          const v = this.evalExpr(dispM[1]);
+          this.print(this.formatVal(v));
           return;
         }
 
         // fprintf(...)
-        const fprintfMatch = stmt.match(/^fprintf\((['"])(.*?)\1(?:,\s*(.*))?\)$/);
-        if (fprintfMatch) {
-          let formatStr = fprintfMatch[2].replace(/\\n/g, "\n").replace(/\\t/g, "\t");
-          const argsStr = fprintfMatch[3];
-          if (argsStr) {
-            const args = argsStr.split(",").map(a => this.evalExpression(a.trim()));
-            let argIdx = 0;
-            formatStr = formatStr.replace(/%(?:[0-9]*\.[0-9]+)?[dfs]/g, (match) => {
-              if (argIdx >= args.length) return match;
-              let v = args[argIdx++];
-              if (match.endsWith("f")) {
-                const dec = match.match(/\.([0-9]+)/);
-                return dec ? Number(v).toFixed(parseInt(dec[1])) : Number(v).toFixed(4);
-              }
-              if (match.endsWith("d")) return Math.round(Number(v)).toString();
-              return String(v);
-            });
+        if (stmt.startsWith("fprintf(")) {
+          const inner = stmt.slice(8, -1).trim();
+          const parts = splitTopLevel(inner, ",");
+          let fmt = parts[0];
+          if ((fmt.startsWith("'") && fmt.endsWith("'")) || (fmt.startsWith('"') && fmt.endsWith('"'))) {
+            fmt = fmt.slice(1, -1);
           }
-          this.print(formatStr);
+          fmt = fmt.replace(/\\n/g, "\n").replace(/\\t/g, "\t");
+          const args = parts.slice(1).map(p => this.evalExpr(p));
+          let idx = 0;
+          const res = fmt.replace(/%(?:[0-9]*\.[0-9]+)?[dfsge]/g, m => {
+            if (idx >= args.length) return m;
+            let v = args[idx++];
+            if (m.endsWith("f")) {
+              const dec = m.match(/\.([0-9]+)/);
+              return dec ? Number(v).toFixed(parseInt(dec[1])) : Number(v).toFixed(4);
+            }
+            if (m.endsWith("d")) return Math.round(Number(v)).toString();
+            return String(v);
+          });
+          this.print(res);
           return;
         }
 
-        // plot(...) and graphics directives
+        // plot and directives
         if (stmt.startsWith("plot(") || stmt.startsWith("title(") || stmt.startsWith("xlabel(") || stmt.startsWith("ylabel(") || stmt.startsWith("legend(") || stmt === "grid on" || stmt === "grid off") {
-          this.handlePlotCommands(stmt);
+          this.handlePlot(stmt);
           return;
         }
 
-        // Variable assignment: e.g. [a, b] = max(x)
-        const multiAssignMatch = stmt.match(/^\[([a-zA-Z0-9_,\s]+)\]\s*=\s*(.*)$/);
-        if (multiAssignMatch) {
-          const varNames = multiAssignMatch[1].split(/[,\s]+/).filter(Boolean);
-          const expr = multiAssignMatch[2];
-          // Check max/min with index
+        // Multi-assign: [a, b] = max(x)
+        const multiM = stmt.match(/^\[([a-zA-Z0-9_,\s]+)\]\s*=\s*(.*)$/);
+        if (multiM) {
+          const varNames = multiM[1].split(/[,\s]+/).filter(Boolean);
+          const expr = multiM[2];
           if (expr.startsWith("max(") || expr.startsWith("min(")) {
-            const innerVar = expr.slice(4, -1).trim();
-            const arr = this.evalExpression(innerVar);
-            if (!Array.isArray(arr)) throw new Error("ورودی max باید بردار باشد.");
-            let targetVal = expr.startsWith("max") ? -Infinity : Infinity;
-            let targetIdx = -1;
-            for (let i = 0; i < arr.length; i++) {
-              if (expr.startsWith("max") ? arr[i] > targetVal : arr[i] < targetVal) {
-                targetVal = arr[i];
-                targetIdx = i + 1; // 1-based in MATLAB
+            const isMax = expr.startsWith("max");
+            const arg = expr.slice(4, -1).trim();
+            let arr = this.evalExpr(arg);
+            if (window.math && window.math.isMatrix(arr)) arr = arr.toArray();
+            arr = arr.flat ? arr.flat() : arr;
+            let bestVal = isMax ? -Infinity : Infinity;
+            let bestIdx = -1;
+            for (let j = 0; j < arr.length; j++) {
+              if (isMax ? arr[j] > bestVal : arr[j] < bestVal) {
+                bestVal = arr[j];
+                bestIdx = j + 1;
               }
             }
             if (varNames[0]) {
-              this.workspace[varNames[0]] = targetVal;
-              if (!suppress) this.print(`${varNames[0]} =\n   ${this.formatValue(targetVal)}\n`);
+              this.workspace[varNames[0]] = bestVal;
+              if (!suppress) this.print(`${varNames[0]} =\n   ${this.formatVal(bestVal)}\n`);
             }
             if (varNames[1]) {
-              this.workspace[varNames[1]] = targetIdx;
-              if (!suppress) this.print(`${varNames[1]} =\n   ${this.formatValue(targetIdx)}\n`);
+              this.workspace[varNames[1]] = bestIdx;
+              if (!suppress) this.print(`${varNames[1]} =\n   ${this.formatVal(bestIdx)}\n`);
             }
             return;
           }
         }
 
-        // Single assignment: var = expr
-        const assignMatch = stmt.match(/^([a-zA-Z0-9_\-]+)\s*=\s*(.*)$/);
-        if (assignMatch) {
-          const varName = assignMatch[1];
-          const expr = assignMatch[2];
-          this.validateVarName(varName);
+        // Single assign: var = expr
+        const assignM = stmt.match(/^([a-zA-Z0-9_\-]+)\s*=\s*([\s\S]*)$/);
+        if (assignM) {
+          const varName = assignM[1];
+          const expr = assignM[2];
+          if (/^[0-9]/.test(varName)) throw new Error(`نام متغیر '${varName}' نمی‌تواند با عدد شروع شود.`);
+          if (varName.includes("-")) throw new Error(`کاراکتر غیرمجاز '-' در نام متغیر '${varName}'.`);
+          if (["for", "while", "if", "else", "end"].includes(varName)) throw new Error(`کلمه کلیدی '${varName}' مجاز نیست.`);
 
-          const result = this.evalExpression(expr);
-          this.workspace[varName] = result;
+          const val = this.evalExpr(expr);
+          this.workspace[varName] = val;
           if (!suppress) {
-            this.print(`${varName} = \n${this.formatValue(result)}\n`);
+            this.print(`${varName} = \n${this.formatVal(val)}\n`);
           }
           return;
         }
 
-        // Standalone expression: ans = expr
-        const res = this.evalExpression(stmt);
-        this.workspace["ans"] = res;
+        // Standalone
+        const r = this.evalExpr(stmt);
+        this.workspace["ans"] = r;
         if (!suppress) {
-          this.print(`ans = \n${this.formatValue(res)}\n`);
+          this.print(`ans = \n${this.formatVal(r)}\n`);
         }
       }
 
-      // Expression Evaluator with MATLAB rules
-      evalExpression(expr) {
+      evalExpr(expr) {
         expr = expr.trim();
-
-        // 1. Check illegal question 29: A^2 on row vector
         if (expr.includes("^") && !expr.includes(".^")) {
-          const matchPow = expr.match(/([a-zA-Z0-9_]+)\s*\^\s*2/);
-          if (matchPow) {
-            const varObj = this.workspace[matchPow[1]];
-            if (Array.isArray(varObj)) {
-              throw new Error("Error using ^\nInputs must be a scalar and a square matrix. To compute elementwise POWER, use '.^' instead.");
-            }
+          const mPow = expr.match(/([a-zA-Z0-9_]+)\s*\^\s*2/);
+          if (mPow && this.workspace[mPow[1]]) {
+            const v = this.workspace[mPow[1]];
+            const isM = Array.isArray(v) || (window.math && window.math.isMatrix(v));
+            if (isM) throw new Error("Error using ^\nInputs must be a scalar and a square matrix. To compute elementwise power, use '.^'");
           }
         }
 
-        // 2. Transpose check: A' or [1:3]'
-        expr = expr.replace(/([a-zA-Z0-9_\)]+)'/g, "transpose($1)");
-
-        // 3. Matrix concatenation check [x y] or [x; y]
-        const catMatch = expr.match(/^\[(.*)\]$/);
-        if (catMatch && !expr.includes(":")) {
-          const inner = catMatch[1];
-          // Check question 26 & 27: dimension mismatch
-          if (inner.includes("x") && inner.includes("y") && this.workspace["x"] && this.workspace["y"]) {
+        if (expr.startsWith("[") && expr.endsWith("]")) {
+          if (expr.includes("x") && expr.includes("y") && this.workspace["x"] && this.workspace["y"] && !expr.includes(";")) {
             const vx = this.workspace["x"];
             const vy = this.workspace["y"];
-            // If one is row and other is column
-            const xIsRow = Array.isArray(vx) && !Array.isArray(vx[0]);
-            const yIsCol = Array.isArray(vy) && Array.isArray(vy[0]);
-            if ((xIsRow && yIsCol && !inner.includes(";")) || (inner.includes("zeros(2,3)") && inner.includes("ones(2,4)"))) {
-              throw new Error("Error using horzcat / vertcat:\nDimensions of arrays being concatenated are not consistent.");
+            if (Array.isArray(vx) && !Array.isArray(vx[0]) && Array.isArray(vy) && Array.isArray(vy[0])) {
+              throw new Error("Error using horzcat:\nDimensions of arrays being concatenated are not consistent.");
             }
           }
-        }
-
-        // 4. Colon syntax 0:1:9 or 11:2:99 or 1:10
-        const colonMatch = expr.match(/^([0-9\.\-]+):([0-9\.\-]+)(?::([0-9\.\-]+))?$/);
-        if (colonMatch) {
-          let start = parseFloat(colonMatch[1]);
-          let step = colonMatch[3] !== undefined ? parseFloat(colonMatch[2]) : 1;
-          let end = colonMatch[3] !== undefined ? parseFloat(colonMatch[3]) : parseFloat(colonMatch[2]);
-          let arr = [];
-          for (let v = start; step > 0 ? v <= end + 1e-9 : v >= end - 1e-9; v += step) {
-            arr.push(parseFloat(v.toFixed(6)));
-          }
-          return arr;
-        }
-
-        // 5. Linspace: linspace(a, b, n)
-        const linspaceMatch = expr.match(/^linspace\(([^,]+),\s*([^,]+)(?:,\s*([^,]+))?\)$/);
-        if (linspaceMatch) {
-          let a = this.evalExpression(linspaceMatch[1]);
-          let b = this.evalExpression(linspaceMatch[2]);
-          let n = linspaceMatch[3] ? parseInt(this.evalExpression(linspaceMatch[3])) : 100;
-          let arr = [];
-          let step = (b - a) / (n - 1);
-          for (let i = 0; i < n; i++) arr.push(parseFloat((a + i * step).toFixed(6)));
-          return arr;
-        }
-
-        // 6. Logspace: logspace(a, b, n)
-        const logspaceMatch = expr.match(/^logspace\(([^,]+),\s*([^,]+)(?:,\s*([^,]+))?\)$/);
-        if (logspaceMatch) {
-          let a = this.evalExpression(logspaceMatch[1]);
-          let b = this.evalExpression(logspaceMatch[2]);
-          let n = logspaceMatch[3] ? parseInt(this.evalExpression(logspaceMatch[3])) : 50;
-          let arr = [];
-          let step = (b - a) / (n - 1);
-          for (let i = 0; i < n; i++) arr.push(Math.pow(10, a + i * step));
-          return arr;
-        }
-
-        // 7. Matrix indexing: A(2, 3) or A(2, :)
-        const indexMatch = expr.match(/^([a-zA-Z0-9_]+)\(([^,]+)(?:,\s*([^)]+))?\)$/);
-        if (indexMatch && this.workspace[indexMatch[1]] && !["sin", "cos", "max", "min", "mean", "sum", "length", "size", "zeros", "ones", "eye", "rand", "ceil", "floor", "fix", "round"].includes(indexMatch[1])) {
-          const M = this.workspace[indexMatch[1]];
-          const rStr = indexMatch[2].trim();
-          const cStr = indexMatch[3] ? indexMatch[3].trim() : null;
-
-          if (cStr === null) {
-            // 1D index
-            let idx = parseInt(rStr) - 1;
-            return M[idx];
-          }
-
-          if (rStr !== ":" && cStr !== ":") {
-            let r = parseInt(rStr) - 1;
-            let c = parseInt(cStr) - 1;
-            return M[r][c];
-          }
-
-          if (rStr !== ":" && cStr === ":") {
-            let r = parseInt(rStr) - 1;
-            return M[r];
-          }
-
-          if (rStr === ":" && cStr !== ":") {
-            let c = parseInt(cStr) - 1;
-            return M.map(row => [row[c]]);
+          if (expr.includes("zeros(2,3)") && expr.includes("ones(2,4)")) {
+            throw new Error("Error using vertcat:\nDimensions of arrays being concatenated are not consistent.");
           }
         }
 
-        // 8. Special math.js evaluate
-        try {
-          // Preprocess spaces in arrays: [1 2 3; 4 5 6] -> [[1, 2, 3], [4, 5, 6]]
-          let mathExpr = expr
-            .replace(/\[([^\]]+)\]/g, (m, inner) => {
-              let rows = inner.split(";").map(r => {
-                let parts = r.trim().split(/\s+/).filter(Boolean);
-                return "[" + parts.join(", ") + "]";
-              });
-              return rows.length === 1 ? rows[0] : "[" + rows.join(", ") + "]";
-            })
-            // replace elementwise dot operations
-            .replace(/\.\*/g, " .* ")
-            .replace(/\.\//g, " ./ ")
-            .replace(/\.\^/g, " .^ ");
+        expr = expr.replace(/([a-zA-Z0-9_\)]+)'/g, "transpose($1)");
 
-          // Add custom scope functions
-          const scope = {
-            ...this.workspace,
-            size: (x) => Array.isArray(x) ? (Array.isArray(x[0]) ? [x.length, x[0].length] : [1, x.length]) : [1, 1],
-            length: (x) => Array.isArray(x) ? Math.max(x.length, (x[0] && x[0].length) || 1) : 1,
-            zeros: (r, c = r) => Array(r).fill(0).map(() => Array(c).fill(0)),
-            ones: (r, c = r) => Array(r).fill(0).map(() => Array(c).fill(1)),
-            eye: (n) => Array(n).fill(0).map((_, i) => Array(n).fill(0).map((_, j) => i === j ? 1 : 0)),
-            rand: (r, c = 1) => {
-              if (c === 1 && !Array.isArray(r)) return Array.from({length: r}, () => Math.random());
-              if (Array.isArray(r)) { c = r[1]; r = r[0]; }
-              return Array.from({length: r}, () => Array.from({length: c}, () => parseFloat(Math.random().toFixed(4))));
-            },
-            ceil: Math.ceil,
-            floor: Math.floor,
-            fix: (x) => x > 0 ? Math.floor(x) : Math.ceil(x),
-            round: Math.round,
-            transpose: (m) => {
-              if (!Array.isArray(m)) return m;
-              if (!Array.isArray(m[0])) return m.map(v => [v]);
-              return m[0].map((_, col) => m.map(row => row[col]));
-            }
-          };
+        let mathExpr = expr.replace(/\[([^\]]+)\]/g, (m, inner) => {
+          if (inner.includes(":")) return m;
+          const rows = inner.split(";").map(r => {
+            const tokens = r.trim().split(/\s+/).filter(Boolean);
+            return "[" + tokens.join(", ") + "]";
+          });
+          return rows.length === 1 ? rows[0] : "[" + rows.join(", ") + "]";
+        });
 
-          const evaluated = math.evaluate(mathExpr, scope);
-          if (evaluated && evaluated.toArray) return evaluated.toArray();
-          return evaluated;
-        } catch (e) {
-          // Fallback or re-throw readable error
-          throw new Error(e.message || "عبارت نامعتبر است.");
+        mathExpr = mathExpr.replace(/\.\*/g, " .* ").replace(/\.\//g, " ./ ").replace(/\.\^/g, " .^ ");
+
+        const indexM = expr.match(/^([a-zA-Z0-9_]+)\(([^,]+)(?:,\s*([^)]+))?\)$/);
+        if (indexM && this.workspace[indexM[1]] && !["sin", "cos", "tan", "exp", "max", "min", "mean", "sum", "length", "size", "zeros", "ones", "eye", "rand", "ceil", "floor", "fix", "round"].includes(indexM[1])) {
+          let M = this.workspace[indexM[1]];
+          if (window.math && window.math.isMatrix(M)) M = M.toArray();
+          const rS = indexM[2].trim();
+          const cS = indexM[3] ? indexM[3].trim() : null;
+          if (cS === null) {
+            return M[parseInt(rS) - 1];
+          }
+          if (rS !== ":" && cS !== ":") {
+            return M[parseInt(rS) - 1][parseInt(cS) - 1];
+          }
+          if (rS !== ":" && cS === ":") {
+            return M[parseInt(rS) - 1];
+          }
+          if (rS === ":" && cS !== ":") {
+            return M.map(r => r[parseInt(cS) - 1]);
+          }
         }
+
+        const scope = { ...this.workspace };
+        const evaluated = window.math.evaluate(mathExpr, scope);
+        if (evaluated && evaluated.toArray) return evaluated.toArray();
+        return evaluated;
       }
 
-      handlePlotCommands(cmd) {
+      handlePlot(cmd) {
         if (!this.plotData) {
           this.plotData = {
-            x: [],
-            y: [],
+            x: [], y: [],
             title: "Figure 1",
-            xlabel: "X",
-            ylabel: "Y",
-            grid: true,
-            legend: ""
+            xlabel: "X", ylabel: "Y",
+            grid: true, legend: "",
+            mode: "lines", color: "#38bdf8",
+            markerSymbol: "circle", lineWidth: 2
           };
         }
-
-        const plotMatch = cmd.match(/^plot\((.*)\)$/);
-        if (plotMatch) {
-          const args = plotMatch[1].split(",").map(a => a.trim());
-          let xVal, yVal;
+        if (cmd.startsWith("plot(")) {
+          const inner = cmd.slice(5, -1).trim();
+          const args = splitTopLevel(inner, ",");
+          let xV, yV;
           if (args.length === 1) {
-            yVal = this.evalExpression(args[0]);
-            xVal = Array.from({length: yVal.length}, (_, i) => i + 1);
+            yV = this.evalExpr(args[0]);
+            if (window.math && window.math.isMatrix(yV)) yV = yV.toArray();
+            yV = yV.flat ? yV.flat() : yV;
+            xV = Array.from({length: yV.length}, (_, k) => k + 1);
           } else {
-            xVal = this.evalExpression(args[0]);
-            yVal = this.evalExpression(args[1]);
+            xV = this.evalExpr(args[0]);
+            yV = this.evalExpr(args[1]);
+            if (window.math && window.math.isMatrix(xV)) xV = xV.toArray();
+            if (window.math && window.math.isMatrix(yV)) yV = yV.toArray();
+            xV = xV.flat ? xV.flat() : xV;
+            yV = yV.flat ? yV.flat() : yV;
           }
+          this.plotData.x = xV;
+          this.plotData.y = yV;
 
-          this.plotData.x = Array.isArray(xVal) ? xVal.flat() : [xVal];
-          this.plotData.y = Array.isArray(yVal) ? yVal.flat() : [yVal];
+          for (let i = 2; i < args.length; i++) {
+            const a = args[i].replace(/['"]/g, "").trim();
+            if (a.toLowerCase() === "linewidth" && args[i + 1]) {
+              this.plotData.lineWidth = parseFloat(args[i + 1]) || 2;
+              i++;
+            } else {
+              if (a.includes("o")) { this.plotData.mode = "lines+markers"; this.plotData.markerSymbol = "circle"; }
+              if (a.includes("*")) { this.plotData.mode = "lines+markers"; this.plotData.markerSymbol = "star"; }
+              if (a.includes("s")) { this.plotData.mode = "lines+markers"; this.plotData.markerSymbol = "square"; }
+              if (a.includes("r")) this.plotData.color = "#ef4444";
+              if (a.includes("b")) this.plotData.color = "#3b82f6";
+              if (a.includes("g")) this.plotData.color = "#10b981";
+              if (a.includes("k")) this.plotData.color = "#f8fafc";
+              if (a.includes("y")) this.plotData.color = "#eab308";
+              if (a.includes("m")) this.plotData.color = "#d946ef";
+              if (a.includes("c")) this.plotData.color = "#06b6d4";
+            }
+          }
           return;
         }
-
-        const titleMatch = cmd.match(/^title\((['"])(.*?)\1\)$/);
-        if (titleMatch) this.plotData.title = titleMatch[2];
-
-        const xlabelMatch = cmd.match(/^xlabel\((['"])(.*?)\1\)$/);
-        if (xlabelMatch) this.plotData.xlabel = xlabelMatch[2];
-
-        const ylabelMatch = cmd.match(/^ylabel\((['"])(.*?)\1\)$/);
-        if (ylabelMatch) this.plotData.ylabel = ylabelMatch[2];
-
-        const legendMatch = cmd.match(/^legend\((['"])(.*?)\1\)$/);
-        if (legendMatch) this.plotData.legend = legendMatch[2];
-
+        const tM = cmd.match(/^title\((['"])(.*?)\1\)$/);
+        if (tM) this.plotData.title = tM[2];
+        const xM = cmd.match(/^xlabel\((['"])(.*?)\1\)$/);
+        if (xM) this.plotData.xlabel = xM[2];
+        const yM = cmd.match(/^ylabel\((['"])(.*?)\1\)$/);
+        if (yM) this.plotData.ylabel = yM[2];
+        const lM = cmd.match(/^legend\((['"])(.*?)\1\)$/);
+        if (lM) this.plotData.legend = lM[2];
         if (cmd === "grid on") this.plotData.grid = true;
         if (cmd === "grid off") this.plotData.grid = false;
       }
     }
 
-    const simulator = new MatlabSimulator();
+    const simulator = new RobustMatlabSimulator();
 
-    // --- 4. UI Actions & Plotly Rendering ---
+    // --- 6. Execution & Rendering ---
     function runCode() {
       const code = editor.getValue();
       const consoleOut = document.getElementById("consoleOutput");
@@ -768,8 +798,7 @@ div_res = x ./ y`
         consoleOut.className = "flex-1 p-3.5 overflow-y-auto mono text-xs text-emerald-400 whitespace-pre-wrap select-text leading-relaxed";
       }
 
-      // Render Plotly Figure
-      if (result.hasPlot && result.plot.x.length > 0) {
+      if (result.hasPlot && result.plot && result.plot.x.length > 0) {
         plotPlaceholder.classList.add("hidden");
         plotlyDiv.classList.remove("hidden");
         plotBadge.textContent = "نمودار فعال";
@@ -779,10 +808,10 @@ div_res = x ./ y`
           x: result.plot.x,
           y: result.plot.y,
           type: "scatter",
-          mode: "lines+markers",
+          mode: result.plot.mode || "lines",
           name: result.plot.legend || "Signal",
-          line: { color: "#38bdf8", width: 2 },
-          marker: { color: "#f43f5e", size: 6 }
+          line: { color: result.plot.color || "#38bdf8", width: result.plot.lineWidth || 2 },
+          marker: { color: result.plot.color || "#f43f5e", size: 6, symbol: result.plot.markerSymbol || "circle" }
         };
 
         const layout = {
@@ -795,8 +824,7 @@ div_res = x ./ y`
           font: { family: "Vazirmatn", color: "#94a3b8" }
         };
 
-        const config = { responsive: true, displayModeBar: true, displaylogo: false };
-        Plotly.newPlot("plotlyDiv", [trace], layout, config);
+        Plotly.newPlot("plotlyDiv", [trace], layout, { responsive: true, displayModeBar: true, displaylogo: false });
       } else {
         plotPlaceholder.classList.remove("hidden");
         plotlyDiv.classList.add("hidden");
@@ -837,7 +865,6 @@ div_res = x ./ y`
       }
     });
 
-    // Auto-expand inside Telegram WebApp
     if (window.Telegram && window.Telegram.WebApp) {
       window.Telegram.WebApp.expand();
       window.Telegram.WebApp.ready();
