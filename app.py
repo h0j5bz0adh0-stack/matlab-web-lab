@@ -60,8 +60,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Concurrency semaphore: prevent more than 4 concurrent octave runs
-EXECUTION_SEMAPHORE = asyncio.Semaphore(4)
+# Concurrency semaphore: prevent more than 2 concurrent octave runs (optimized for 512MB RAM)
+EXECUTION_SEMAPHORE = asyncio.Semaphore(2)
+
+# Health endpoint for Render & UptimeRobot pinger
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
 
 class RunRequest(BaseModel):
     code: str
@@ -159,7 +164,19 @@ end
             try:
                 out_b, err_b = await asyncio.wait_for(proc.communicate(), timeout=15.0)
                 stdout_res = out_b.decode("utf-8", errors="replace")
-                stderr_res = err_b.decode("utf-8", errors="replace")
+                raw_err = err_b.decode("utf-8", errors="replace")
+                # Filter out benign octave/gnuplot toolkit warnings
+                clean_err_lines = []
+                skip = False
+                for line in raw_err.splitlines():
+                    if "warning: using the gnuplot graphics toolkit" in line:
+                        skip = True
+                    elif skip and line.startswith("The qt toolkit is recommended"):
+                        skip = False
+                        continue
+                    elif not skip:
+                        clean_err_lines.append(line)
+                stderr_res = "\n".join(clean_err_lines).strip()
                 if proc.returncode != 0:
                     status = "error"
             except asyncio.TimeoutError:

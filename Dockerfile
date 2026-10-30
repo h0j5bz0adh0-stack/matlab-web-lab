@@ -32,6 +32,7 @@ COPY --chown=user:user . .
 # Ensure storage directories are writable
 RUN mkdir -p plots_storage && chmod 777 plots_storage
 
-EXPOSE 7860
+# Expose default port (Render overrides via $PORT)
+EXPOSE 8080
 
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port ${PORT:-8080}"]
