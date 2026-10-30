@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>آزمایشگاه تحت وب متلب (MATLAB Web Lab)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ace.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/mode-matlab.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/theme-monokai.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Vazirmatn', sans-serif; }
+    .mono { font-family: 'JetBrains Mono', monospace; direction: ltr; text-align: left; }
+    #editor { height: 100%; width: 100%; font-size: 14px; font-family: 'JetBrains Mono', monospace; direction: ltr; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
+
+  <!-- Navbar -->
+  <header class="bg-slate-800 border-b border-slate-700 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-md">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-black text-xl shadow-lg shadow-blue-500/20">
+        M
+      </div>
+      <div>
+        <h1 class="text-base font-bold text-white leading-tight">آزمایشگاه متلب و اکتاو</h1>
+        <p class="text-xs text-slate-400">سامانه پردازش ابری درس مهندسی پزشکی</p>
+      </div>
+    </div>
+
+    <!-- Student Info Bar -->
+    <div class="flex items-center gap-2 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-700 text-xs">
+      <span class="text-slate-400">دانشجو:</span>
+      <input id="studentName" type="text" placeholder="نام و نام خانوادگی" class="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none w-36">
+      <input id="studentId" type="text" placeholder="شماره دانشجویی" class="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none w-28">
+    </div>
+
+    <!-- Actions & Example selector -->
+    <div class="flex items-center gap-2">
+      <select id="exampleSelector" class="bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none">
+        <option value="">نمونه کدهای آماده...</option>
+        <option value="sine">سیگنال سینوسی و نویز</option>
+        <option value="fft">تحلیل فرکانسی (FFT)</option>
+        <option value="ecg">شبیه‌سازی سیگنال قلب (ECG)</option>
+        <option value="filter">فیلتر میان‌گذر باترورث</option>
+        <option value="matrix">محاسبات ماتریسی و ویژه</option>
+      </select>
+
+      <button id="runBtn" class="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-semibold text-xs px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg shadow-emerald-600/25 transition">
+        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        <span>اجرای کد (Ctrl+Enter)</span>
+      </button>
+
+      <a href="/admin" target="_blank" class="text-xs text-slate-400 hover:text-slate-200 border border-slate-700 hover:border-slate-500 rounded-lg px-2.5 py-1.5 transition">
+        پنل استاد
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Layout Grid -->
+  <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2 p-2 overflow-hidden">
+    
+    <!-- Code Editor Column -->
+    <section class="lg:col-span-7 flex flex-col bg-slate-800/90 rounded-xl border border-slate-700/80 overflow-hidden shadow-lg">
+      <div class="bg-slate-800 px-3 py-1.5 flex items-center justify-between border-b border-slate-700 text-xs text-slate-300">
+        <span class="flex items-center gap-1.5 font-medium">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          ویرایشگر کد (main.m)
+        </span>
+        <div class="flex items-center gap-2">
+          <button id="clearCodeBtn" class="hover:text-red-400 text-slate-400 transition">پاک کردن</button>
+          <span>|</span>
+          <button id="copyCodeBtn" class="hover:text-blue-400 text-slate-400 transition">کپی</button>
+        </div>
+      </div>
+      <div class="flex-1 relative min-h-[350px]">
+        <div id="editor"></div>
+      </div>
+    </section>
+
+    <!-- Output & Plots Column -->
+    <section class="lg:col-span-5 flex flex-col gap-2 overflow-hidden">
+      
+      <!-- Terminal Output Box -->
+      <div class="flex-1 flex flex-col bg-slate-950 rounded-xl border border-slate-800 overflow-hidden shadow-lg min-h-[200px]">
+        <div class="bg-slate-900/80 px-3 py-1.5 flex items-center justify-between border-b border-slate-800 text-xs text-slate-400">
+          <span class="flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            کنسول خروجی
+          </span>
+          <span id="execStats" class="text-slate-500 font-mono text-[11px]">زمان اجرا: ۰ ثانیه</span>
+        </div>
+        <div id="consoleOutput" class="flex-1 p-3 overflow-y-auto mono text-xs text-emerald-400 whitespace-pre-wrap select-text leading-relaxed">
+آماده برای اجرای کد...
+        </div>
+      </div>
+
+      <!-- Plots Gallery Box -->
+      <div class="h-64 flex flex-col bg-slate-800/90 rounded-xl border border-slate-700/80 overflow-hidden shadow-lg">
+        <div class="bg-slate-800 px-3 py-1.5 flex items-center justify-between border-b border-slate-700 text-xs text-slate-300">
+          <span class="flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+            نمودارها و پلات‌های خروجی
+          </span>
+          <span id="plotCount" class="text-[11px] text-slate-400">۰ نمودار</span>
+        </div>
+        <div id="plotsContainer" class="flex-1 p-2 flex items-center justify-center overflow-x-auto gap-2 bg-slate-900/50">
+          <div class="text-slate-500 text-xs text-center">
+            اگر در کد دستورات رسم نمودار (مانند plot, stem, surf) استفاده شود، خروجی اینجا نمایش داده می‌شود.
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <script>
+    // Initialize Ace Editor
+    const editor = ace.edit("editor");
+    editor.setTheme("ace/theme/monokai");
+    editor.session.setMode("ace/mode/matlab");
+    editor.setShowPrintMargin(false);
+    editor.setOptions({
+      enableBasicAutocompletion: true,
+      enableLiveAutocompletion: true,
+      tabSize: 4,
+      useSoftTabs: true
+    });
+
+    // Default Code
+    const defaultCode = `% آزمایشگاه مهندسی پزشکی
+% رسم دو سیگنال سینوسی و محاسبه تبدیل فوریه
+
+fs = 1000;            % فرکانس نمونه‌برداری (Hz)
+t = 0:1/fs:1-1/fs;    % بردار زمان ۱ ثانیه‌ای
+
+% تولید دو مولفه فرکانسی ۵۰ و ۱۲۰ هرتز
+f1 = 50;
+f2 = 120;
+signal = 0.7 * sin(2*pi*f1*t) + sin(2*pi*f2*t);
+noisy_signal = signal + 2 * randn(size(t));
+
+figure(1);
+plot(t(1:100)*1000, noisy_signal(1:100), 'b', 'LineWidth', 1.2);
+title('سیگنال در حوزه زمان (۱۰۰ میلی ثانیه اول)');
+xlabel('زمان (میلی ثانیه)');
+ylabel('دامنه');
+grid on;
+
+fprintf('میانگین سیگنال: %f\\n', mean(signal));
+fprintf('انحراف معیار نویز: %f\\n', std(noisy_signal));
+`;
+
+    // Load from local storage or set default
+    const savedCode = localStorage.getItem("matlab_web_code");
+    editor.setValue(savedCode || defaultCode, -1);
+
+    document.getElementById("studentName").value = localStorage.getItem("matlab_student_name") || "";
+    document.getElementById("studentId").value = localStorage.getItem("matlab_student_id") || "";
+
+    // Save inputs
+    document.getElementById("studentName").addEventListener("input", (e) => localStorage.setItem("matlab_student_name", e.target.value));
+    document.getElementById("studentId").addEventListener("input", (e) => localStorage.setItem("matlab_student_id", e.target.value));
+    editor.on("change", () => localStorage.setItem("matlab_web_code", editor.getValue()));
+
+    // Examples
+    const EXAMPLES = {
+      sine: `% تولید و رسم سیگنال سینوسی
+t = 0:0.001:1;
+y = sin(2*pi*5*t);
+plot(t, y, 'r-', 'LineWidth', 2);
+title('سیگنال ۵ هرتز');
+xlabel('t (s)'); ylabel('Amplitude');
+grid on;
+disp('نمودار رسم شد.');`,
+      fft: `% تحلیل طیف فرکانسی با FFT
+Fs = 1000;
+t = 0:1/Fs:1;
+x = cos(2*pi*100*t) + sin(2*pi*250*t);
+Y = fft(x);
+P2 = abs(Y/length(t));
+P1 = P2(1:length(t)/2+1);
+P1(2:end-1) = 2*P1(2:end-1);
+f = Fs*(0:(length(t)/2))/length(t);
+
+plot(f, P1, 'LineWidth', 1.5);
+title('طیف فرکانسی یک‌طرفه');
+xlabel('f (Hz)'); ylabel('|P1(f)|');
+grid on;`,
+      ecg: `% مدل‌سازی ساده ضربان قلب
+t = 0:0.01:2;
+ecg = sin(2*pi*1.2*t) + 0.3*sin(2*pi*3*t) - 0.2*sin(2*pi*5*t);
+plot(t, ecg, 'k', 'LineWidth', 1.8);
+title('شبیه‌سازی ریتم پایه ECG');
+xlabel('زمان (ثانیه)'); ylabel('پتانسیل (mV)');
+grid on;
+fprintf('تعداد ضربان در دقیقه: %d\\n', round(1.2 * 60));`,
+      filter: `% فیلتر میان‌گذر سیگنال زیستی
+Fs = 500;
+t = 0:1/Fs:2;
+clean_sig = sin(2*pi*10*t);
+noise = 0.5 * randn(size(t));
+raw_sig = clean_sig + noise;
+
+% اعمال میانگین متحرک (Moving Average)
+window_size = 5;
+b = (1/window_size)*ones(1, window_size);
+a = 1;
+filtered_sig = filter(b, a, raw_sig);
+
+subplot(2,1,1); plot(t(1:200), raw_sig(1:200), 'r'); title('سیگنال خام با نویز'); grid on;
+subplot(2,1,2); plot(t(1:200), filtered_sig(1:200), 'b', 'LineWidth', 1.5); title('سیگنال فیلتر شده'); grid on;`,
+      matrix: `% جبر خطی و مقادیر ویژه ماتریس
+A = [4 1 2; 1 3 0; 2 0 5];
+disp('ماتریس A:');
+disp(A);
+
+eigen_vals = eig(A);
+disp('مقادیر ویژه ماتریس A:');
+disp(eigen_vals);
+
+inv_A = inv(A);
+disp('وارون ماتریس A:');
+disp(inv_A);`
+    };
+
+    document.getElementById("exampleSelector").addEventListener("change", (e) => {
+      const key = e.target.value;
+      if (key && EXAMPLES[key]) {
+        editor.setValue(EXAMPLES[key], -1);
+      }
+    });
+
+    document.getElementById("clearCodeBtn").addEventListener("click", () => {
+      if (confirm("آیا متن کد پاک شود؟")) editor.setValue("", -1);
+    });
+
+    document.getElementById("copyCodeBtn").addEventListener("click", () => {
+      navigator.clipboard.writeText(editor.getValue());
+      alert("کد در کلیپ‌بورد کپی شد.");
+    });
+
+    // Run Code
+    async function executeCode() {
+      const code = editor.getValue();
+      const studentName = document.getElementById("studentName").value.trim() || "ناشناس";
+      const studentId = document.getElementById("studentId").value.trim() || "---";
+
+      const runBtn = document.getElementById("runBtn");
+      const consoleOut = document.getElementById("consoleOutput");
+      const execStats = document.getElementById("execStats");
+      const plotsContainer = document.getElementById("plotsContainer");
+      const plotCount = document.getElementById("plotCount");
+
+      runBtn.disabled = true;
+      runBtn.classList.add("opacity-50", "cursor-not-allowed");
+      consoleOut.textContent = "در حال ارسال و اجرا روی سرور ابری...";
+      consoleOut.className = "flex-1 p-3 overflow-y-auto mono text-xs text-yellow-400 whitespace-pre-wrap select-text leading-relaxed";
+
+      try {
+        const res = await fetch("/api/run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code, student_name: studentName, student_id: studentId })
+        });
+
+        const data = await res.json();
+        execStats.textContent = `زمان اجرا: ${data.execution_time || 0} ثانیه`;
+
+        if (res.ok) {
+          let output = "";
+          if (data.stdout) output += data.stdout;
+          if (data.stderr) output += (output ? "\n--- هشدارها / خطاها ---\n" : "") + data.stderr;
+          if (!output.trim()) output = "(کد با موفقیت اجرا شد بدون خروجی متنی در کنسول)";
+
+          consoleOut.textContent = output;
+          consoleOut.className = data.status === "error" || data.status === "timeout" 
+            ? "flex-1 p-3 overflow-y-auto mono text-xs text-red-400 whitespace-pre-wrap select-text leading-relaxed"
+            : "flex-1 p-3 overflow-y-auto mono text-xs text-emerald-400 whitespace-pre-wrap select-text leading-relaxed";
+
+          // Render plots
+          if (data.plots && data.plots.length > 0) {
+            plotCount.textContent = `${data.plots.length} نمودار`;
+            plotsContainer.innerHTML = data.plots.map(p => `
+              <div class="relative group bg-slate-950 p-1 rounded border border-slate-700 flex-shrink-0 h-full flex items-center justify-center">
+                <a href="${p}" target="_blank" title="مشاهده تصویر در اندازه اصلی">
+                  <img src="${p}" class="max-h-52 object-contain rounded transition hover:scale-105" alt="Plot">
+                </a>
+              </div>
+            `).join("");
+          } else {
+            plotCount.textContent = "۰ نمودار";
+            plotsContainer.innerHTML = `<div class="text-slate-500 text-xs text-center">هیچ نموداری توسط این کد تولید نشد.</div>`;
+          }
+
+        } else {
+          consoleOut.textContent = "خطا: " + (data.error || data.detail || "مشکل در اجرای اسکریپت");
+          consoleOut.className = "flex-1 p-3 overflow-y-auto mono text-xs text-red-400 whitespace-pre-wrap select-text leading-relaxed";
+        }
+      } catch (err) {
+        consoleOut.textContent = "خطا در برقراری ارتباط با سرور: " + err.message;
+        consoleOut.className = "flex-1 p-3 overflow-y-auto mono text-xs text-red-400 whitespace-pre-wrap select-text leading-relaxed";
+      } finally {
+        runBtn.disabled = false;
+        runBtn.classList.remove("opacity-50", "cursor-not-allowed");
+      }
+    }
+
+    document.getElementById("runBtn").addEventListener("click", executeCode);
+    document.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        executeCode();
+      }
+    });
+  </script>
+</body>
+</html>

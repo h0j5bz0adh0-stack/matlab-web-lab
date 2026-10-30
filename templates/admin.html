@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>پنل نظارت و ارزیابی استاد - آزمایشگاه متلب</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Vazirmatn', sans-serif; }
+    .mono { font-family: 'JetBrains Mono', monospace; direction: ltr; text-align: left; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-slate-800 border-b border-slate-700 px-6 py-3 flex items-center justify-between shadow-md">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center font-bold text-lg shadow-lg shadow-purple-500/20">
+        🎓
+      </div>
+      <div>
+        <h1 class="text-base font-bold text-white leading-tight">پنل مدیریت و ارزیابی استاد</h1>
+        <p class="text-xs text-slate-400">نظارت زنده بر فعالیت، کدها و خروجی دانشجویان</p>
+      </div>
+    </div>
+
+    <div id="headerActions" class="hidden flex items-center gap-3">
+      <button id="refreshBtn" class="bg-slate-700 hover:bg-slate-600 text-xs px-3 py-1.5 rounded-lg border border-slate-600 transition flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        بروزرسانی
+      </button>
+      <button id="exportBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-lg shadow transition">
+        خروجی گزارش (JSON)
+      </button>
+      <a href="/" target="_blank" class="text-xs text-slate-400 hover:text-slate-200 border border-slate-700 rounded-lg px-2.5 py-1.5 transition">
+        محیط دانشجو
+      </a>
+      <button id="logoutBtn" class="text-xs text-red-400 hover:text-red-300 border border-red-900/50 hover:bg-red-950/40 rounded-lg px-2.5 py-1.5 transition">
+        خروج
+      </button>
+    </div>
+  </header>
+
+  <!-- Login Modal -->
+  <div id="loginModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-sm shadow-2xl text-center">
+      <div class="w-14 h-14 bg-indigo-600/20 text-indigo-400 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl border border-indigo-500/30">
+        🔐
+      </div>
+      <h2 class="text-lg font-bold text-white mb-1">ورود به پنل استاد</h2>
+      <p class="text-xs text-slate-400 mb-5">رمز عبور مدیریتی را وارد کنید</p>
+      
+      <form id="loginForm" class="space-y-3">
+        <input id="adminPass" type="password" placeholder="رمز عبور" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-center text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+        <div id="loginError" class="text-xs text-red-400 hidden"></div>
+        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs py-2.5 rounded-xl transition shadow-lg shadow-indigo-600/30">
+          ورود
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main id="dashboardContent" class="hidden flex-1 p-4 flex flex-col gap-4 max-w-7xl w-full mx-auto">
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div class="bg-slate-800/80 border border-slate-700/80 rounded-xl p-4 flex items-center justify-between">
+        <div>
+          <p class="text-xs text-slate-400">کل دفعات اجرای کد</p>
+          <p id="statTotalRuns" class="text-2xl font-black text-white mt-1">۰</p>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-lg">⚡</div>
+      </div>
+      <div class="bg-slate-800/80 border border-slate-700/80 rounded-xl p-4 flex items-center justify-between">
+        <div>
+          <p class="text-xs text-slate-400">تعداد دانشجویان یکتا</p>
+          <p id="statTotalStudents" class="text-2xl font-black text-white mt-1">۰</p>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-lg">👥</div>
+      </div>
+      <div class="bg-slate-800/80 border border-slate-700/80 rounded-xl p-4 flex items-center justify-between">
+        <div>
+          <p class="text-xs text-slate-400">وضعیت سرور اکتاو</p>
+          <p class="text-sm font-bold text-emerald-400 mt-2 flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            فعال و آماده
+          </p>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-lg">⚙️</div>
+      </div>
+    </div>
+
+    <!-- Filter and Tabs Bar -->
+    <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-800/60 p-2.5 rounded-xl border border-slate-700">
+      <div class="flex items-center gap-2">
+        <button id="tabRunsBtn" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white">آخرین فعالیت‌ها</button>
+        <button id="tabStudentsBtn" class="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white">فهرست دانشجویان</button>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <input id="searchInput" type="text" placeholder="جستجو نام یا شماره دانشجویی..." class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 w-64">
+      </div>
+    </div>
+
+    <!-- Table 1: Recent Runs -->
+    <div id="runsTableContainer" class="flex-1 bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden flex flex-col shadow">
+      <div class="overflow-x-auto flex-1">
+        <table class="w-full text-right text-xs">
+          <thead class="bg-slate-900/60 text-slate-400 border-b border-slate-700">
+            <tr>
+              <th class="p-3">#</th>
+              <th class="p-3">دانشجو</th>
+              <th class="p-3">شماره دانشجویی</th>
+              <th class="p-3">زمان ثبت</th>
+              <th class="p-3">مدت (ثانیه)</th>
+              <th class="p-3">وضعیت</th>
+              <th class="p-3">نمودار</th>
+              <th class="p-3 text-center">عملیات</th>
+            </tr>
+          </thead>
+          <tbody id="runsTableBody" class="divide-y divide-slate-700/50 text-slate-300">
+            <tr><td colspan="8" class="text-center p-6 text-slate-500">در حال دریافت داده‌ها...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Table 2: Students Aggregate (Hidden by default) -->
+    <div id="studentsTableContainer" class="hidden flex-1 bg-slate-800/80 border border-slate-700 rounded-xl overflow-hidden flex flex-col shadow">
+      <div class="overflow-x-auto flex-1">
+        <table class="w-full text-right text-xs">
+          <thead class="bg-slate-900/60 text-slate-400 border-b border-slate-700">
+            <tr>
+              <th class="p-3">نام دانشجو</th>
+              <th class="p-3">شماره دانشجویی</th>
+              <th class="p-3">تعداد اجرای کد</th>
+              <th class="p-3">آخرین فعالیت</th>
+              <th class="p-3">IP کلاینت</th>
+            </tr>
+          </thead>
+          <tbody id="studentsTableBody" class="divide-y divide-slate-700/50 text-slate-300">
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Inspection Modal (Code & Output Detail) -->
+  <div id="detailModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="px-4 py-3 bg-slate-850 border-b border-slate-700 flex items-center justify-between">
+        <h3 id="modalStudentTitle" class="font-bold text-sm text-white">جزئیات اجرای کد</h3>
+        <button id="closeDetailModal" class="text-slate-400 hover:text-white text-lg">&times;</button>
+      </div>
+
+      <div class="p-4 overflow-y-auto space-y-4 flex-1">
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">کد ارسالی دانشجو:</label>
+          <pre id="modalCode" class="mono text-xs bg-slate-950 p-3 rounded-lg border border-slate-800 text-blue-300 overflow-x-auto whitespace-pre"></pre>
+        </div>
+
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">خروجی کنسول (Stdout):</label>
+          <pre id="modalStdout" class="mono text-xs bg-slate-950 p-3 rounded-lg border border-slate-800 text-emerald-400 overflow-x-auto whitespace-pre"></pre>
+        </div>
+
+        <div id="modalStderrContainer" class="hidden">
+          <label class="text-xs text-red-400 block mb-1">خطاها یا هشدارها (Stderr):</label>
+          <pre id="modalStderr" class="mono text-xs bg-slate-950 p-3 rounded-lg border border-red-900/50 text-red-400 overflow-x-auto whitespace-pre"></pre>
+        </div>
+
+        <div id="modalPlotsContainer" class="hidden">
+          <label class="text-xs text-slate-400 block mb-1">نمودارهای تولیدشده:</label>
+          <div id="modalPlotsList" class="flex gap-2 overflow-x-auto p-2 bg-slate-950 rounded-lg border border-slate-800"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let cachedStats = null;
+
+    // Check login state
+    async function checkAuthAndLoad() {
+      try {
+        const res = await fetch("/api/admin/stats");
+        if (res.ok) {
+          const data = await res.json();
+          onLoginSuccess(data);
+        } else {
+          document.getElementById("loginModal").classList.remove("hidden");
+        }
+      } catch (err) {
+        document.getElementById("loginModal").classList.remove("hidden");
+      }
+    }
+
+    function onLoginSuccess(data) {
+      cachedStats = data;
+      document.getElementById("loginModal").classList.add("hidden");
+      document.getElementById("dashboardContent").classList.remove("hidden");
+      document.getElementById("headerActions").classList.remove("hidden");
+      renderStats(data);
+    }
+
+    // Login Form Submit
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const password = document.getElementById("adminPass").value;
+      const errorDiv = document.getElementById("loginError");
+      errorDiv.classList.add("hidden");
+
+      try {
+        const res = await fetch("/api/admin/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password })
+        });
+        if (res.ok) {
+          checkAuthAndLoad();
+        } else {
+          errorDiv.textContent = "رمز عبور نادرست است.";
+          errorDiv.classList.remove("hidden");
+        }
+      } catch (err) {
+        errorDiv.textContent = "خطا در ارتباط: " + err.message;
+        errorDiv.classList.remove("hidden");
+      }
+    });
+
+    // Logout
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await fetch("/api/admin/logout", { method: "POST" });
+      location.reload();
+    });
+
+    // Refresh
+    document.getElementById("refreshBtn").addEventListener("click", async () => {
+      const res = await fetch("/api/admin/stats");
+      if (res.ok) {
+        const data = await res.json();
+        onLoginSuccess(data);
+      }
+    });
+
+    // Export JSON
+    document.getElementById("exportBtn").addEventListener("click", async () => {
+      const res = await fetch("/api/admin/export");
+      if (res.ok) {
+        const data = await res.json();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `matlab_lab_export_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+      }
+    });
+
+    function renderStats(data) {
+      document.getElementById("statTotalRuns").textContent = data.total_runs;
+      document.getElementById("statTotalStudents").textContent = data.total_students;
+
+      const filterVal = document.getElementById("searchInput").value.toLowerCase();
+
+      // Render Runs
+      const filteredRuns = (data.recent_runs || []).filter(r => 
+        (r.student_name || "").toLowerCase().includes(filterVal) ||
+        (r.student_id || "").toLowerCase().includes(filterVal)
+      );
+
+      const runsBody = document.getElementById("runsTableBody");
+      if (filteredRuns.length === 0) {
+        runsBody.innerHTML = `<tr><td colspan="8" class="text-center p-6 text-slate-500">موردی یافت نشد.</td></tr>`;
+      } else {
+        runsBody.innerHTML = filteredRuns.map(r => {
+          const plotsList = r.plots ? r.plots.split(",").filter(Boolean) : [];
+          const statusBadge = r.status === "success" 
+            ? '<span class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/20 text-emerald-400">موفق</span>'
+            : '<span class="px-2 py-0.5 rounded-full text-[10px] bg-red-500/20 text-red-400">خطا</span>';
+          
+          return `
+            <tr class="hover:bg-slate-700/30 transition">
+              <td class="p-3 font-mono">${r.id}</td>
+              <td class="p-3 font-semibold text-white">${r.student_name}</td>
+              <td class="p-3 font-mono">${r.student_id}</td>
+              <td class="p-3 text-slate-400">${r.timestamp}</td>
+              <td class="p-3 font-mono">${r.execution_time}s</td>
+              <td class="p-3">${statusBadge}</td>
+              <td class="p-3 font-mono">${plotsList.length > 0 ? plotsList.length + ' تصویر' : '---'}</td>
+              <td class="p-3 text-center">
+                <button onclick="viewDetail(${r.id})" class="bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 px-2.5 py-1 rounded transition text-[11px]">
+                  بررسی کد و خروجی
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join("");
+      }
+
+      // Render Students
+      const studentsBody = document.getElementById("studentsTableBody");
+      const filteredStudents = (data.students || []).filter(s => 
+        (s.student_name || "").toLowerCase().includes(filterVal) ||
+        (s.student_id || "").toLowerCase().includes(filterVal)
+      );
+
+      studentsBody.innerHTML = filteredStudents.map(s => `
+        <tr class="hover:bg-slate-700/30 transition">
+          <td class="p-3 font-semibold text-white">${s.student_name}</td>
+          <td class="p-3 font-mono">${s.student_id}</td>
+          <td class="p-3 font-mono text-emerald-400 font-bold">${s.run_count}</td>
+          <td class="p-3 text-slate-400">${s.last_seen}</td>
+          <td class="p-3 font-mono text-slate-500">${s.client_ip}</td>
+        </tr>
+      `).join("");
+    }
+
+    document.getElementById("searchInput").addEventListener("input", () => {
+      if (cachedStats) renderStats(cachedStats);
+    });
+
+    // Tab switching
+    const tabRunsBtn = document.getElementById("tabRunsBtn");
+    const tabStudentsBtn = document.getElementById("tabStudentsBtn");
+    const runsContainer = document.getElementById("runsTableContainer");
+    const studentsContainer = document.getElementById("studentsTableContainer");
+
+    tabRunsBtn.addEventListener("click", () => {
+      tabRunsBtn.className = "px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white";
+      tabStudentsBtn.className = "px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white";
+      runsContainer.classList.remove("hidden");
+      studentsContainer.classList.add("hidden");
+    });
+
+    tabStudentsBtn.addEventListener("click", () => {
+      tabStudentsBtn.className = "px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white";
+      tabRunsBtn.className = "px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white";
+      studentsContainer.classList.remove("hidden");
+      runsContainer.classList.add("hidden");
+    });
+
+    // Detail Modal
+    window.viewDetail = function(id) {
+      const item = (cachedStats.recent_runs || []).find(r => r.id === id);
+      if (!item) return;
+
+      document.getElementById("modalStudentTitle").textContent = `کد ارسالی: ${item.student_name} (${item.student_id}) - شناسه #${item.id}`;
+      document.getElementById("modalCode").textContent = item.code || "(خالی)";
+      document.getElementById("modalStdout").textContent = item.stdout || "(بدون خروجی کنسول)";
+
+      const stderrContainer = document.getElementById("modalStderrContainer");
+      if (item.stderr && item.stderr.trim()) {
+        stderrContainer.classList.remove("hidden");
+        document.getElementById("modalStderr").textContent = item.stderr;
+      } else {
+        stderrContainer.classList.add("hidden");
+      }
+
+      const plotsContainer = document.getElementById("modalPlotsContainer");
+      const plotsList = item.plots ? item.plots.split(",").filter(Boolean) : [];
+      if (plotsList.length > 0) {
+        plotsContainer.classList.remove("hidden");
+        document.getElementById("modalPlotsList").innerHTML = plotsList.map(p => `
+          <a href="${p}" target="_blank" class="block bg-slate-900 p-1 rounded border border-slate-700">
+            <img src="${p}" class="h-36 object-contain" alt="plot">
+          </a>
+        `).join("");
+      } else {
+        plotsContainer.classList.add("hidden");
+      }
+
+      document.getElementById("detailModal").classList.remove("hidden");
+    };
+
+    document.getElementById("closeDetailModal").addEventListener("click", () => {
+      document.getElementById("detailModal").classList.add("hidden");
+    });
+
+    // Initial load
+    checkAuthAndLoad();
+  </script>
+</body>
+</html>
