@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+lab.db
+plots_storage/
+tunnel.log
+active_tunnel_url.txt
+chrome_*.db
