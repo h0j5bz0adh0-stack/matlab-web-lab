@@ -478,6 +478,62 @@ div_res = x ./ y`
       return result;
     }
 
+    function handleStringsAndTranspose(code) {
+      const strings = [];
+      let inString = false;
+      let stringChar = "";
+      let clean = "";
+      let strBuffer = "";
+
+      for (let i = 0; i < code.length; i++) {
+        const c = code[i];
+        if (inString) {
+          strBuffer += c;
+          if (c === stringChar) {
+            if (stringChar === "'" && code[i + 1] === "'") {
+              strBuffer += "'";
+              i++;
+            } else {
+              inString = false;
+              const placeholder = `__STR_${strings.length}__`;
+              strings.push(strBuffer);
+              clean += placeholder;
+              strBuffer = "";
+            }
+          }
+        } else {
+          if (c === '"') {
+            inString = true;
+            stringChar = '"';
+            strBuffer += c;
+          } else if (c === "'") {
+            let prevIdx = i - 1;
+            while (prevIdx >= 0 && /\s/.test(code[prevIdx])) prevIdx--;
+            const prevChar = prevIdx >= 0 ? code[prevIdx] : "";
+            if (/[a-zA-Z0-9_\)\]\}]/.test(prevChar)) {
+              clean += "'";
+            } else {
+              inString = true;
+              stringChar = "'";
+              strBuffer += c;
+            }
+          } else {
+            clean += c;
+          }
+        }
+      }
+
+      // Remaining single quotes outside strings are transpose operators
+      clean = clean.replace(/(\[[^\]]+\])'/g, "transpose($1)");
+      clean = clean.replace(/(\([^\)]+\))'/g, "transpose($1)");
+      clean = clean.replace(/([a-zA-Z0-9_]+)'/g, "transpose($1)");
+
+      for (let s = 0; s < strings.length; s++) {
+        clean = clean.replace(`__STR_${s}__`, strings[s]);
+      }
+      return clean;
+    }
+
     // --- 5. Robust MATLAB Simulator Engine ---
     class RobustMatlabSimulator {
       constructor() {
@@ -671,7 +727,7 @@ div_res = x ./ y`
           }
         }
 
-        expr = expr.replace(/([a-zA-Z0-9_\)]+)'/g, "transpose($1)");
+        expr = handleStringsAndTranspose(expr);
 
         let mathExpr = expr.replace(/\[([^\]]+)\]/g, (m, inner) => {
           if (inner.includes(":")) return m;
